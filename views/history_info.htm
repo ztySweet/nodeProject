@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" /> 
+<title>查询</title>
+<script src="https://apps.bdimg.com/libs/jquery/2.1.4/jquery.min.js">
+</script>
+<script src="http://echarts.baidu.com/build/dist/echarts.js"></script>
+<script>  require.config({
+    paths: {
+        echarts: 'http://echarts.baidu.com/build/dist'
+    }
+});
+</script>
+
+
+<script>
+    function figure(data){
+  var temp=new Array;
+      for(var d in data){
+
+    //console.log(typeof data[d].date);
+         // data[d].date.setHours(data[d].date.getHours()+8);
+        //  console.log(data[d].date);
+       temp.push(data[d].date.substring(0,10));
+         // console.log(data[d].date.substring(0,10));
+      }
+      
+
+      var arr = [];
+      temp.sort();
+
+      for(var d in temp){console.log(temp[d])}
+      for (var i = 0; i < temp.length;) {
+        var count = 0;
+        for (var j = i; j < temp.length; j++) {
+          if (temp[i] === temp[j]) {
+            count++;
+          }
+        }
+        arr.push({
+          date: temp[i],
+          count: count
+        })
+        i+=count;
+      }
+    
+   
+   
+    var dayX=[],dayY=[];
+    for(var j=0;j<arr.length;j++){
+      dayX.push(arr[j].date);
+      dayY.push(arr[j].count);
+    }
+
+
+      //  for(var x in dayX) {console.log(dayX[x]);}
+        //for(var y in dayY) {console.log(dayY[y]);}
+
+
+
+
+    require(
+        [
+            'echarts',
+            'echarts/chart/bar',
+            'echarts/chart/line'
+        ],
+        function (ec) {
+            
+            var myChart = ec.init(document.getElementById('main')); 
+            
+            var option = {
+              title : {
+                  text: '该时间段日访问量:',
+                  subtext: '(纯属虚构)'
+              },
+              tooltip : {
+                  trigger: 'axis'
+              },
+              legend: {
+                  data:['访问量']
+              },
+              toolbox: {
+                  show : true,
+                  feature : {
+                      mark : {show: true},
+                      dataView : {show: true, readOnly: false},
+                      magicType : {show: true, type: ['line', 'bar']},
+                      restore : {show: true},
+                      saveAsImage : {show: true}
+                  }
+              },
+              calculable : true,
+              xAxis : [
+                  {
+                      type : 'category',
+                      data : dayX,
+                      boundaryGap:["20%","%60"],
+                      axisLabel:{
+                          rotate:70,
+                          interval:0
+                      }
+                  }
+              ],
+              yAxis : [
+                  {
+                      type : 'value'
+                  }
+              ],
+              series : [
+                  {
+                      name:'访问量',
+                      type:'bar',
+                      data:dayY,
+                      markPoint : {
+                          data : [
+                              {type : 'max', name: '最大值'},
+                              {type : 'min', name: '最小值'}
+                          ]
+                      },
+                      markLine : {
+                          data : [
+                              {type : 'average', name: '平均值'}
+                          ]
+                      }
+                  },
+                  
+              ]
+          };
+    
+            myChart.setOption(option); 
+            window.onresize = myChart.resize;
+        }
+    ); 
+}
+</script>
+
+
+<script>
+$(document).ready(function(){
+  
+
+
+
+
+    $("#button_id").click(function(){
+		$.get("http://127.0.0.1:3000/queryInfoUI/info",{
+            id:$("#appID").val(),
+		},
+		function(data,status){
+          console.log(typeof data);
+            if(data[0]=="T"){
+                
+                var str=data.substring(0,data.length);
+                document.getElementById("main").innerHTML=str;  
+            }else{
+                          if((typeof data)=="object"){
+                var info="</br>";   
+              
+                for(var d in data[0]){
+                    info+=d+":"+data[0][d]+"</br>";
+                 }
+                document.getElementById("main").innerHTML="该公司信息为："+info;
+                }
+              else{
+                 //document.write("2"+typeof data);
+                 // document.write(data[data.length-1]);
+                var dat=data.substring(1,data.length-1);
+               var inf="</br>"; 
+           
+               var jn= JSON.parse(dat); 
+         
+               for(var d in jn){
+               inf+=d+" : "+jn[d]+"</br>";
+                }
+                document.getElementById("main").innerHTML="该公司信息为："+inf;
+              }
+            }
+    
+    }
+  );
+	});
+
+  
+	$("#button1").click(function(){
+		$.get("http://127.0.0.1:3000/UIaspect/history",{
+			id:$("#appID").val(),
+      start:$("#day").val(),
+      end:$("#day").val()
+		},
+		function(data,status){
+			document.getElementById("medo1").innerHTML="该天访问量为："+data.length;
+    }
+  );
+	});
+
+
+
+
+  $("#button2").click(function(){
+		$.get("http://127.0.0.1:3000/UIaspect/history",{
+			id:$("#appID").val(),
+      start:$("#month").val()+"-1",
+      end:$("#month").val()+"-31",
+		},
+		function(data,status){
+      document.getElementById("medo2").innerHTML="该月访问量为："+data.length;
+      
+      figure(data);
+
+		});
+  });
+
+	$("#button3").click(function(){
+		$.get("http://127.0.0.1:3000/UIaspect/history",{
+			id:$("#appID").val(),
+      start:$("#start").val(),
+      end:$("#end").val()
+    },
+		function(data,status){
+
+    
+      document.getElementById("medo3").innerHTML="该时间段总访问量为："+data.length;
+  
+      figure(data);
+  
+        
+
+  });
+	});
+});
+</script>
+</head>
+
+<body>
+
+
+
+公司ID或名称: <input type="text" id="appID"><button id="button_id">查询公司信息</button>
+
+</br>
+
+查询日期: <input type="datetime" id="day">
+<button id="button1">查询该日访问量</button>
+
+</br>
+查询月份: <input type="month" id="month">
+<button id="button2">查询该月访问量</button>
+
+</br>
+起始日期: <input type="datetime" id="start">
+结束日期: <input type="datetime" id="end">
+<button id="button3">查询该段时间内日访问量</button>	
+  
+</br></br>
+<b>查询结果：</b>
+</br><span id="medo1" ></span>
+</br>
+<span id="medo2" ></span>
+</br>
+<span id="medo3" ></span>
+</br>
+<div id="main" style="height:400px"></div>
+
+</body>
+</html>
