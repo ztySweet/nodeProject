@@ -6,10 +6,10 @@ var dbConfig = require('../db/DBconfig');
 var userSQL = require('../db/userSql');
 var request = require('request');
 
-global.countRecordHdb = 0;
-global.leftIndexReturnHdb = 1;
-global.rightIndexReturnHdb = 5000;
-global.timerReqTrainAI = 1000;
+// global.countRecordHdb = 0;
+// global.leftIndexReturnHdb = 1;
+// global.rightIndexReturnHdb = 5000;
+// global.timerReqTrainAI = 1000;
 
 // 使用DBConfig.js的配置信息创建一个MySQL连接池
 var pool = mysql.createPool( dbConfig.mysql );
@@ -25,58 +25,44 @@ var responseJSON = function (res, ret) {
 router.get('/', function(req, res, next) {
     res.send('respond with a resource');
 });
-// function reqTrainAI(){
-//     router.get('/isTrain', function(req, res, next){  //AI系统提供接口
-//         var isTrain = req.query.isTrain;
-//         if(isTrain === 1){
-//             pool.getConnection(function(err, connection){
-//                 var hsql = "select qdb.question, tdb.tid from qdb, hdb, tdb where hdb.id>=leftIndexReturnHdb and hdb.rightIndexReturnHdb " +
-//                     "and hdb.appId=qdb.appId and hdb.appId=tdb.appId and hdb.standardQuestionId=qdb.qid and tdb.type=qdb.questionType ";
-//                 connection.query(hsql, function(err,result){
-//                     if(err){
-//                         responseJSON(res,err.message);
-//                         return;
-//                     }
-//                     if(result) {
-//                         leftIndexReturnHdb = leftIndexReturnHdb + 5000;
-//                         rightIndexReturnHdb = rightIndexReturnHdb + 5000;
-//                         result = {
-//                             retCode: 200,
-//                             retDesc:'返回5000条记录',
-//                             reqResult:result
-//                         };
-//                     }
-//                     responseJSON(res, result);
-//                     // 释放连接
-//                     connection.release();
-//                 });
-//             });
-//
-//         }
-//         else{
-//             setTimeout(reqTrainAI(),timerReqTrainAI );
-//         }
-//     });
-// }
+
 //用户选择问题
 router.post('/conversation',function(req, res){
     pool.getConnection(function(err, connection) {
+        if(err){
+            console.log(err.message);
+            return;
+        }
 // 获取前台页面传过来的参数
         var param = req.body;
-        //console.log(param);
+       // console.log(param);
         var date = new Date();
         date.setHours(date.getHours()+8);//时区问题解决方案
 // 建立连接 增加一个用户信息
+
         connection.query(userSQL.userInQ, [date,param.appId,param.standardQuestionId,param.isRecSuccess,param.artificialQuestion], function(err, result) {
+
             if(err){
-                responseJSON(res,err.message);
+                console.log(err.message);
                 return;
             }
             if(result) {
-                //countRecordHdb++;
-                // if(countRecordHdb === 5000){
-                //     reqTrainAI();
+                // if(param.isRecSuccess == 1){
+                //     countRecordHdb++;
+                //     console.log(countRecordHdb);
+                //     if(countRecordHdb === 5){
+                //         countRecordHdb = 0;
+                //         console.log(countRecordHdb);
+                //         request('http://111.207.243.70:83/dl/trainAble&appId='+param.appId ,function(error, response, body){
+                //             console.log(body);
+                //             if(err){
+                //                 console.log(err.message);
+                //
+                //             }
+                //         });
+                //     }
                 // }
+
                 result = {
                     retCode: 200,
                     retDesc:'成功记录'
@@ -87,30 +73,10 @@ router.post('/conversation',function(req, res){
             // 释放连接
             connection.release();
         });
+
     });
 });
-// //查看历史记录
-// router.get('/historyRecord', function(req, res, next){
-//     // 从连接池获取连接
-//     pool.getConnection(function(err, connection) {
-// // 获取前台页面传过来的参数
-//         var appId = req.query.appId ;
-//         connection.query(userSQL.hselect, appId, function(err, result) {
-//             console.log(result);
-//             if(result) {
-//                 result = {
-//                     retCode: 200,
-//                     retDesc:'查询历史记录成功',
-//                     getDate:result
-//                 };
-//             }
-//             // 以json形式，把操作结果返回给前台页面
-//             responseJSON(res, result);
-//             // 释放连接
-//             connection.release();
-//         });
-//     });
-// });
+
 //初始化知识库
 router.post('/base', function(req, res){
 
